@@ -2,9 +2,11 @@
 
 A pipeline for generating chess decoy puzzles from OTB master games and Lichess engine evaluations.
 
-A **decoy puzzle** presents a balanced middlegame position where the player must find one of several equally-good continuations — there is no single "only move". They are the opposite of tactics: the test is calm assessment, not calculation. This pipeline identifies those positions automatically from master game databases.
+A **decoy puzzle** presents a balanced middlegame position where the player must find one of several equally-good continuations, there is no single "only move". The purpose is for these to be trained alongside normal tactics, in order to throw users off. 
 
-The output is a JSONL file (`decoy_positions.jsonl`) that can be imported into any chess training system. The schema is versioned and documented in [`schema.json`](schema.json). The canonical published dataset and its download URL are described in [`meta.json`](meta.json).
+This repo was built by extracting this logic from [Woodpecker](https://github.com/gilbertbrandow/woodpecker).
+
+The output is a JSONL file (`decoy_positions.jsonl`). The schema is versioned and documented in [`schema.json`](schema.json). The canonical published dataset and its download URL are described in [`meta.json`](meta.json).
 
 ---
 
