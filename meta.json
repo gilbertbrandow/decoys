@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "dataset": {
+    "repository": "https://huggingface.co/datasets/simongilbertbrandow/chess-decoy-positions",
+    "file": "decoy_positions.jsonl",
+    "url": "https://huggingface.co/datasets/simongilbertbrandow/chess-decoy-positions/resolve/main/decoy_positions.jsonl"
+  }
+}

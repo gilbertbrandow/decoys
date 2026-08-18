@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gilbertbrandow/decoys/main/schema.json",
+  "title": "DecoyPosition",
+  "description": "A single decoy chess puzzle record in decoy_positions.jsonl",
+  "type": "object",
+  "required": ["fen", "opponentMove", "bestCp", "depth", "acceptedMoves", "moveNumber"],
+  "properties": {
+    "fen": {
+      "type": "string",
+      "description": "4-part FEN of the position before the opponent's move (board, turn, castling, en passant)"
+    },
+    "opponentMove": {
+      "type": "string",
+      "description": "UCI string of the opponent's move that leads to the puzzle position the player must solve"
+    },
+    "bestCp": {
+      "type": "integer",
+      "description": "Centipawn score of the best reply, normalised to the side to move (positive = good for solver)"
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Engine search depth at which the evaluation was computed"
+    },
+    "acceptedMoves": {
+      "type": "array",
+      "description": "All moves within CLUSTER_CP of the best move — any one is accepted as a correct answer",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["uci", "cp", "dropCp"],
+        "properties": {
+          "uci": {
+            "type": "string",
+            "description": "UCI string of the move (e.g. e2e4)"
+          },
+          "line": {
+            "type": "string",
+            "description": "Full engine PV line starting with this move"
+          },
+          "cp": {
+            "type": "integer",
+            "description": "Centipawn score of this move, normalised to the side to move"
+          },
+          "dropCp": {
+            "type": "integer",
+            "description": "Centipawn drop from the best move (0 for the best move itself)"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "string",
+      "description": "Source tag for the game this position was drawn from (e.g. otb_master)"
+    },
+    "event": { "type": ["string", "null"] },
+    "date": { "type": ["string", "null"] },
+    "white": { "type": ["string", "null"] },
+    "black": { "type": ["string", "null"] },
+    "whiteElo": { "type": ["string", "null"] },
+    "blackElo": { "type": ["string", "null"] },
+    "whiteTitle": { "type": ["string", "null"] },
+    "blackTitle": { "type": ["string", "null"] },
+    "moveNumber": {
+      "type": "integer",
+      "description": "Half-move number within the source game when this position occurs"
+    },
+    "eco": { "type": ["string", "null"] },
+    "openingName": { "type": ["string", "null"] },
+    "lichessGameUrl": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "URL to a Lichess game where this position appears (for reference)"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.env
+
+# Pipeline data — never commit raw data or generated artefacts
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.jsonl
+*.7z
+*.zip
+*.pgn
+*.zst
