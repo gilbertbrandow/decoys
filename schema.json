@@ -4,7 +4,7 @@
   "title": "DecoyPosition",
   "description": "A single decoy chess puzzle record in decoy_positions.jsonl",
   "type": "object",
-  "required": ["fen", "opponentMove", "bestCp", "depth", "acceptedMoves", "moveNumber"],
+  "required": ["fen", "opponentMove", "game_moves", "bestCp", "depth", "acceptedMoves", "moveNumber"],
   "properties": {
     "fen": {
       "type": "string",
@@ -13,6 +13,10 @@
     "opponentMove": {
       "type": "string",
       "description": "UCI string of the opponent's move that leads to the puzzle position the player must solve"
+    },
+    "game_moves": {
+      "type": "string",
+      "description": "Space-separated UCI move sequence from game start through opponentMove (e.g. \"e2e4 e7e5 g1f3 g8c6\")"
     },
     "bestCp": {
       "type": "integer",
