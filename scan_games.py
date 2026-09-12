@@ -257,6 +257,7 @@ def scan(
                 board = game.board()
                 prev_fen_4: str | None = None
                 prev_move_uci: str | None = None
+                game_ucis: list[str] = []
                 move_num = 0
                 decoys_this_game = 0
                 next_check_at = MOVE_MIN
@@ -306,6 +307,7 @@ def scan(
                                 record = {
                                     "fen": prev_fen_4,
                                     "opponentMove": prev_move_uci,
+                                    "game_moves": " ".join(game_ucis),
                                     "bestCp": result["bestCp"],
                                     "depth": result["depth"],
                                     "acceptedMoves": result["acceptedMoves"],
@@ -329,6 +331,7 @@ def scan(
 
                     prev_fen_4 = current_fen_4
                     prev_move_uci = move.uci()
+                    game_ucis.append(move.uci())
                     board.push(move)
 
                 if games_processed % 1_000 == 0:
