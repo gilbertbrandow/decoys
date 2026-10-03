@@ -25,16 +25,21 @@ MAX_CANDIDATES = 15
 class LichessClient:
     """Rate-limited Masters Explorer client.
 
-    Retries transient errors (network, 5xx, 429). The position endpoint requires a
-    Lichess API token (env `LICHESS_TOKEN`); the PGN endpoint works without one.
+    Requests are sequential (never concurrent), spaced at least `rate_interval`
+    seconds apart. Retries transient errors (network, 5xx, 429). The position
+    endpoint requires a Lichess API token (env `LICHESS_TOKEN`); the PGN endpoint
+    works without one.
     """
 
-    def __init__(self, token: str | None = None, max_attempts: int = 8) -> None:
+    def __init__(
+        self, token: str | None = None, max_attempts: int = 8, rate_interval: float = RATE_INTERVAL
+    ) -> None:
         self.http = requests.Session()
         token = token or os.environ.get("LICHESS_TOKEN")
         if token:
             self.http.headers["Authorization"] = f"Bearer {token}"
         self.max_attempts = max_attempts
+        self.rate_interval = rate_interval
         self._last_req = 0.0
 
     def _get(self, url: str, params: dict | None = None, *, accept: str) -> requests.Response | None:
@@ -43,8 +48,8 @@ class LichessClient:
         attempts = 0
         while attempts < self.max_attempts:
             elapsed = time.monotonic() - self._last_req
-            if elapsed < RATE_INTERVAL:
-                time.sleep(RATE_INTERVAL - elapsed)
+            if elapsed < self.rate_interval:
+                time.sleep(self.rate_interval - elapsed)
             try:
                 resp = self.http.get(url, params=params, headers={"Accept": accept}, timeout=15)
                 self._last_req = time.monotonic()

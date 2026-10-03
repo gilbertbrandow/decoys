@@ -70,11 +70,17 @@ def main() -> None:
     p.add_argument("--in", dest="src", required=True, type=Path)
     p.add_argument("--out", required=True, type=Path)
     p.add_argument("--cache", type=Path, default=Path("data/lichess_link_cache.json"))
+    p.add_argument(
+        "--rate-interval",
+        type=float,
+        default=0.0,
+        help="Minimum seconds between requests (default 0: back-to-back, one at a time; 429s still back off)",
+    )
     p.add_argument("--no-relink", action="store_true", help="Only verify existing URLs; never look up new ones")
     args = p.parse_args()
 
     records = [json.loads(line) for line in args.src.open(encoding="utf-8")]
-    client = CachedClient(LichessClient(), args.cache)
+    client = CachedClient(LichessClient(rate_interval=args.rate_interval), args.cache)
 
     old_url_by_game: dict[str, set[str]] = {}
     for r in records:
