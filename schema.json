@@ -16,7 +16,7 @@
     },
     "game_moves": {
       "type": "string",
-      "description": "Space-separated UCI move sequence from game start through opponentMove (e.g. \"e2e4 e7e5 g1f3 g8c6\")"
+      "description": "Space-separated UCI move sequence of the full game (e.g. \"e2e4 e7e5 g1f3 g8c6 ...\"). The puzzle position is reached after the first moveNumber - 1 moves; the last of those is opponentMove"
     },
     "bestCp": {
       "type": "integer",
