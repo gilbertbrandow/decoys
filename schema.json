@@ -74,7 +74,7 @@
     "lichessGameUrl": {
       "type": ["string", "null"],
       "format": "uri",
-      "description": "URL to a Lichess game where this position appears (for reference)"
+      "description": "URL of this exact source game on Lichess (Masters database): its full move list equals game_moves. Null if the game could not be matched. Never a different game that merely passes through the position."
     }
   },
   "additionalProperties": false

@@ -1,5 +1,6 @@
 # ── Configuration ────────────────────────────────────────────────────────────
 # Required for publish: huggingface-cli login  OR  export HF_TOKEN=hf_xxxx
+# Required for Lichess game links in scan-games: export LICHESS_TOKEN=lip_xxxx
 #
 # Override data dir:  make docker-scan-games DATA_DIR=/my/data
 # Override HF repo:   make docker-publish HF_REPO=myuser/my-repo
@@ -51,6 +52,7 @@ docker-build-evals: docker-build
 docker-scan-games: docker-build
 	docker run --rm \
 	  -v $(HOST_DATA):/data \
+	  -e LICHESS_TOKEN=$(LICHESS_TOKEN) \
 	  $(IMAGE) make scan-games
 
 docker-publish: docker-build
@@ -66,4 +68,5 @@ docker-all: docker-build
 	  -v $(HOST_DATA):/data \
 	  -v $(HOME)/.cache/huggingface:/root/.cache/huggingface:ro \
 	  -e HF_TOKEN=$(HF_TOKEN) \
+	  -e LICHESS_TOKEN=$(LICHESS_TOKEN) \
 	  $(IMAGE) make all HF_REPO=$(HF_REPO)
