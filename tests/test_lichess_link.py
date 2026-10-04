@@ -1,3 +1,5 @@
+from typing import Any
+
 from decoys.lichess_link import final_fen, find_link_violations, pgn_to_uci, resolve_lichess_url
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -20,7 +22,7 @@ class FakeClient:
         return self.moves_by_id.get(game_id)
 
 
-def _rec(moves: str, url: str | None) -> dict:
+def _rec(moves: str, url: str | None) -> dict[str, Any]:
     return {"game_moves": moves, "lichessGameUrl": url}
 
 

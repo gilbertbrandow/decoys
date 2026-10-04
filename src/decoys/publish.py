@@ -10,10 +10,9 @@ try:
     from huggingface_hub import HfApi, login
     from huggingface_hub.errors import RepositoryNotFoundError
 except ImportError:
-    sys.exit(
-        "huggingface_hub is required for publishing.\n"
-        "Install it with: pip install -r requirements-publish.txt"
-    )
+    sys.exit("huggingface_hub is required for publishing.\nInstall it with: pip install -r requirements-publish.txt")
+
+from decoys.lichess_link import find_link_violations
 
 REPO_ID = "simongilbertbrandow/chess-decoy-positions"
 REPO_TYPE = "dataset"
@@ -21,8 +20,6 @@ REPO_TYPE = "dataset"
 
 def check_dataset(path: Path) -> None:
     """Refuse to publish if any lichessGameUrl is shared by different games."""
-    from decoys.lichess_link import find_link_violations
-
     with path.open(encoding="utf-8") as f:
         violations = find_link_violations(json.loads(line) for line in f)
     if violations:

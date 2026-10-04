@@ -12,5 +12,39 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv", "data"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",  # pycodestyle
+  "F",       # pyflakes
+  "I",       # isort
+  "B",       # bugbear
+  "UP",      # pyupgrade
+  "SIM",     # simplify
+  "C4",      # comprehensions
+  "PTH",     # pathlib
+  "PL",      # pylint
+  "PIE", "RET", "PERF",
+  "PT",      # pytest style
+  "RUF",
+]
+ignore = [
+  # Size limits; the scan/build loops are long by nature.
+  "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+]
+allowed-confusables = ["–"]  # en dash in ranges like "2600 – 2800"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004"]  # literal expected values are the point of a test
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+strict = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

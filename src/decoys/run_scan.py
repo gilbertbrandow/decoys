@@ -14,7 +14,9 @@ def main() -> None:
     p.add_argument("--out", required=True, type=Path, help="Output JSONL path for decoy records")
     p.add_argument("--sort-by-elo", action="store_true", help="Process highest-rated games first")
     p.add_argument("--min-both-elo", type=int, default=2600, help="Minimum ELO for both players")
-    p.add_argument("--event-filter", type=str, default=None, help="Only include games whose Event header contains this string")
+    p.add_argument(
+        "--event-filter", type=str, default=None, help="Only include games whose Event header contains this string"
+    )
     p.add_argument("--games-limit", type=int, default=None, help="Stop after N games")
     p.add_argument("--decoys-limit", type=int, default=None, help="Stop after N decoys found")
     p.add_argument("--max-per-game", type=int, default=2, help="Max decoys to emit per game")

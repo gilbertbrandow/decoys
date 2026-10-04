@@ -115,9 +115,7 @@ Each entry in `acceptedMoves`: `{uci, line, cp, dropCp}`
 ```python
 import requests, json
 
-meta = requests.get(
-    "https://raw.githubusercontent.com/gilbertbrandow/decoys/main/meta.json"
-).json()
+meta = requests.get("https://raw.githubusercontent.com/gilbertbrandow/decoys/main/meta.json").json()
 
 EXPECTED_SCHEMA_VERSION = 1
 assert meta["schemaVersion"] == EXPECTED_SCHEMA_VERSION, (
@@ -128,12 +126,15 @@ assert meta["schemaVersion"] == EXPECTED_SCHEMA_VERSION, (
 
 ---
 
-## Tests
+## Tests and checks
 
 ```bash
-pip install pytest -e .
-pytest tests/
+python3.12 -m venv .venv && source .venv/bin/activate
+make install # dev dependencies + this package (editable)
+make check   # ruff + mypy + pytest, same as CI
 ```
+
+CI (`.github/workflows/ci.yml`) runs the same `make` targets on every push to `main` and on pull requests. VS Code picks up `.venv` automatically via `.vscode/settings.json`.
 
 ---
 
