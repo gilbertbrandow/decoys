@@ -10,6 +10,8 @@ import os
 import time
 from collections import defaultdict
 from collections.abc import Iterable
+from http import HTTPStatus
+from typing import Any, Protocol
 
 import chess
 import chess.pgn
@@ -22,6 +24,14 @@ RATE_INTERVAL = 1.0
 MAX_CANDIDATES = 15
 
 
+class GameLookup(Protocol):
+    """What `resolve_lichess_url` needs from a client: `LichessClient` or a stand-in."""
+
+    def candidate_ids(self, fen: str) -> list[str] | None: ...
+
+    def game_moves(self, game_id: str) -> str | None: ...
+
+
 class LichessClient:
     """Rate-limited Masters Explorer client.
 
@@ -31,9 +41,7 @@ class LichessClient:
     works without one.
     """
 
-    def __init__(
-        self, token: str | None = None, max_attempts: int = 8, rate_interval: float = RATE_INTERVAL
-    ) -> None:
+    def __init__(self, token: str | None = None, max_attempts: int = 8, rate_interval: float = RATE_INTERVAL) -> None:
         self.http = requests.Session()
         token = token or os.environ.get("LICHESS_TOKEN")
         if token:
@@ -42,7 +50,7 @@ class LichessClient:
         self.rate_interval = rate_interval
         self._last_req = 0.0
 
-    def _get(self, url: str, params: dict | None = None, *, accept: str) -> requests.Response | None:
+    def _get(self, url: str, params: dict[str, str] | None = None, *, accept: str) -> requests.Response | None:
         """GET with rate limiting and retries. Returns the 200 or 404 response, or None on failure."""
         backoff = 2.0
         attempts = 0
@@ -54,15 +62,15 @@ class LichessClient:
                 resp = self.http.get(url, params=params, headers={"Accept": accept}, timeout=15)
                 self._last_req = time.monotonic()
 
-                if resp.status_code == 429:
+                if resp.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                     retry_after = int(resp.headers.get("Retry-After", 60))
                     print(f"  429 rate limited — sleeping {retry_after}s", flush=True)
                     time.sleep(retry_after)
                     self._last_req = time.monotonic()
                     continue  # 429 doesn't count as an attempt
-                if resp.status_code in (200, 404):
+                if resp.status_code in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
                     return resp
-                if resp.status_code == 401:
+                if resp.status_code == HTTPStatus.UNAUTHORIZED:
                     raise RuntimeError(f"401 from {url} — set LICHESS_TOKEN to a valid Lichess API token")
 
                 print(f"  Unexpected status {resp.status_code} — retrying in {backoff:.0f}s", flush=True)
@@ -82,14 +90,14 @@ class LichessClient:
             {"fen": fen, "topGames": str(MAX_CANDIDATES), "moves": "0"},
             accept="application/json",
         )
-        if resp is None or resp.status_code != 200:
+        if resp is None or resp.status_code != HTTPStatus.OK:
             return None
         return [g["id"] for g in resp.json().get("topGames", [])]
 
     def game_moves(self, game_id: str) -> str | None:
         """Space-separated UCI moves of a Lichess Masters game, or None if unavailable."""
         resp = self._get(PGN_URL.format(game_id), accept="application/x-chess-pgn")
-        if resp is None or resp.status_code != 200:
+        if resp is None or resp.status_code != HTTPStatus.OK:
             return None
         return pgn_to_uci(resp.text)
 
@@ -113,7 +121,7 @@ def game_id_from_url(url: str) -> str:
     return url.rstrip("/").rsplit("/", 1)[1]
 
 
-def resolve_lichess_url(game_moves: str, client: LichessClient) -> str | None:
+def resolve_lichess_url(game_moves: str, client: GameLookup) -> str | None:
     """Lichess URL of exactly this game, or None if no candidate has identical moves.
 
     Queries the game's final position, which few or no other master games reach,
@@ -126,7 +134,7 @@ def resolve_lichess_url(game_moves: str, client: LichessClient) -> str | None:
     return None
 
 
-def find_link_violations(records: Iterable[dict]) -> dict[str, int]:
+def find_link_violations(records: Iterable[dict[str, Any]]) -> dict[str, int]:
     """Lichess URLs shared by records with different `game_moves` → number of distinct games."""
     games_by_url: dict[str, set[str]] = defaultdict(set)
     for r in records:

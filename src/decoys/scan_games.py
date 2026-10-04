@@ -6,14 +6,15 @@ import tempfile
 import time
 import zipfile
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 
 import chess
 import chess.pgn
-import py7zr  # type: ignore[import-not-found]
+import py7zr
 
-from eval_db import lookup, open_db
-from lichess_link import LichessClient, resolve_lichess_url
+from decoys.eval_db import lookup, open_db
+from decoys.lichess_link import LichessClient, resolve_lichess_url
 
 MOVE_MIN = 20
 GM_ELO_THRESHOLD = 2600
@@ -81,7 +82,7 @@ def _ensure_extracted(path: Path) -> Path:
 
 def _build_elo_index(pgn_path: Path, min_both_elo: int = 0) -> list[tuple[int, int]]:
     index: list[tuple[int, int]] = []
-    with open(pgn_path, encoding="utf-8", errors="replace") as f:
+    with pgn_path.open(encoding="utf-8", errors="replace") as f:
         while True:
             offset = f.tell()
             headers = chess.pgn.read_headers(f)
@@ -99,9 +100,9 @@ def _build_elo_index(pgn_path: Path, min_both_elo: int = 0) -> list[tuple[int, i
     return index
 
 
-def stream_games(path: Path, min_both_elo: int = 0):
+def stream_games(path: Path, min_both_elo: int = 0) -> Iterator[chess.pgn.Game]:
     pgn_path = _ensure_extracted(path)
-    with open(pgn_path, encoding="utf-8", errors="replace") as f:
+    with pgn_path.open(encoding="utf-8", errors="replace") as f:
         while True:
             game = chess.pgn.read_game(f)
             if game is None:
@@ -117,7 +118,7 @@ def stream_games(path: Path, min_both_elo: int = 0):
             yield game
 
 
-def stream_games_by_elo(path: Path, min_both_elo: int = 0):
+def stream_games_by_elo(path: Path, min_both_elo: int = 0) -> Iterator[chess.pgn.Game]:
     pgn_path = _ensure_extracted(path)
     print(f"Building ELO index for {pgn_path.name} ...", flush=True)
     index = _build_elo_index(pgn_path, min_both_elo=min_both_elo)
@@ -125,7 +126,7 @@ def stream_games_by_elo(path: Path, min_both_elo: int = 0):
         f"Index built: {len(index):,} qualifying games, top avg ELO: {index[0][0] if index else 0}",
         flush=True,
     )
-    with open(pgn_path, encoding="utf-8", errors="replace") as f:
+    with pgn_path.open(encoding="utf-8", errors="replace") as f:
         for _avg, offset in index:
             f.seek(offset)
             game = chess.pgn.read_game(f)
@@ -183,7 +184,7 @@ def scan(
     lichess_linked = 0
 
     try:
-        with open(out_path, "w", encoding="utf-8") as out:
+        with out_path.open("w", encoding="utf-8") as out:
             for game in game_source(path, min_both_elo=min_both_elo):
                 event = game.headers.get("Event", "")
                 if event_filter and event_filter.lower() not in event.lower():
@@ -194,17 +195,15 @@ def scan(
                 prev_fen_4: str | None = None
                 prev_move_uci: str | None = None
                 full_game_moves = " ".join(m.uci() for m in game.mainline_moves())
-                move_num = 0
                 decoys_this_game = 0
                 next_check_at = MOVE_MIN
                 game_lichess_url: str | None = None
                 game_lichess_fetched = False
 
-                for node in game.mainline():
+                for move_num, node in enumerate(game.mainline(), start=1):
                     move = node.move
                     if move is None:
                         break
-                    move_num += 1
 
                     current_fen_4 = _short_fen(board)
 
@@ -253,8 +252,12 @@ def scan(
                                     "black": game.headers.get("Black"),
                                     "whiteElo": game.headers.get("WhiteElo"),
                                     "blackElo": game.headers.get("BlackElo"),
-                                    "whiteTitle": _title_fallback(game.headers.get("WhiteTitle"), game.headers.get("WhiteElo")),
-                                    "blackTitle": _title_fallback(game.headers.get("BlackTitle"), game.headers.get("BlackElo")),
+                                    "whiteTitle": _title_fallback(
+                                        game.headers.get("WhiteTitle"), game.headers.get("WhiteElo")
+                                    ),
+                                    "blackTitle": _title_fallback(
+                                        game.headers.get("BlackTitle"), game.headers.get("BlackElo")
+                                    ),
                                     "moveNumber": move_num,
                                     "eco": (game.headers.get("ECO") or "")[:3] or None,
                                     "openingName": game.headers.get("Opening"),
@@ -286,9 +289,7 @@ def scan(
     elapsed = time.monotonic() - start
     print(f"Games processed:    {games_processed:,}")
     print(f"Positions checked:  {positions_checked:,}")
-    print(
-        f"Decoys found:       {decoys_found:,}  ({decoys_found / max(positions_checked, 1) * 100:.2f}% hit rate)"
-    )
+    print(f"Decoys found:       {decoys_found:,}  ({decoys_found / max(positions_checked, 1) * 100:.2f}% hit rate)")
     print(f"Lichess queries:    {lichess_queries:,} ({lichess_linked:,} games linked)")
     print(f"Elapsed:            {elapsed:.1f}s")
     print(f"Output:             {out_path}")

@@ -18,13 +18,15 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from lichess_link import (
+from decoys.lichess_link import (
     LICHESS_GAME_BASE,
     LichessClient,
     final_fen,
     find_link_violations,
     game_id_from_url,
 )
+
+SAVE_EVERY = 25  # lookups between cache flushes
 
 
 class CachedClient:
@@ -40,7 +42,7 @@ class CachedClient:
 
     def _touch(self) -> None:
         self._dirty += 1
-        if self._dirty >= 25:
+        if self._dirty >= SAVE_EVERY:
             self.save()
 
     def save(self) -> None:
@@ -127,9 +129,7 @@ def main() -> None:
     for k, v in outcome.items():
         print(f"  {k + ':':<26}{v:,}")
     print(f"Games linked:     {linked_before:,} → {linked_after:,}")
-    print(
-        f"Records linked:   {sum(1 for r in records if r['lichessGameUrl']):,} / {len(records):,}"
-    )
+    print(f"Records linked:   {sum(1 for r in records if r['lichessGameUrl']):,} / {len(records):,}")
     print(f"Output:           {args.out}")
 
 

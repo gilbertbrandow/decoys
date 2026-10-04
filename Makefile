@@ -18,18 +18,18 @@ DECOYS_OUT := $(DATA_DIR)/decoy_positions.jsonl
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 HOST_DATA    := $(abspath $(MAKEFILE_DIR)/data)
 
-.PHONY: all build-evals scan-games publish \
+.PHONY: all build-evals scan-games publish install lint format typecheck test check \
         docker-build docker-build-evals docker-scan-games docker-publish docker-all
 
-# ── Local targets (run inside the container or a virtualenv) ─────────────────
+# ── Local targets (container, or a virtualenv with `pip install -e .`) ────────
 
 all: build-evals scan-games
 
 build-evals:
-	python build_evals.py --src $(EVALS_SRC) --out $(SQLITE_OUT)
+	python -m decoys.build_evals --src $(EVALS_SRC) --out $(SQLITE_OUT)
 
 scan-games:
-	python run_scan.py \
+	python -m decoys.run_scan \
 	  --games $(GAMES_SRC) \
 	  --db    $(SQLITE_OUT) \
 	  --out   $(DECOYS_OUT) \
@@ -37,7 +37,28 @@ scan-games:
 	  --min-both-elo 2600
 
 publish:
-	python publish.py --file $(DECOYS_OUT) --repo $(HF_REPO)
+	python -m decoys.publish --file $(DECOYS_OUT) --repo $(HF_REPO)
+
+# ── Dev targets ────────────────────────────────────────────────────────────
+
+install:
+	pip install -r requirements-dev.txt
+
+lint:
+	ruff check .
+	ruff format --check .
+
+format:
+	ruff format .
+	ruff check --fix .
+
+typecheck:
+	mypy
+
+test:
+	pytest -q
+
+check: lint typecheck test
 
 # ── Docker targets ────────────────────────────────────────────────────────────
 

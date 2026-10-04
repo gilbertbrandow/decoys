@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-import eval_db
+from decoys import eval_db
 
 
 def main() -> None:

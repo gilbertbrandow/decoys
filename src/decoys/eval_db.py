@@ -5,6 +5,7 @@ import json
 import sqlite3
 import time
 from pathlib import Path
+from typing import Any
 
 import zstandard
 
@@ -22,7 +23,7 @@ def _normalize_cp(cp: int, fen: str) -> int:
     return cp if fen.split()[1] == "w" else -cp
 
 
-def classify(evals: list[dict], fen: str) -> dict | None:
+def classify(evals: list[dict[str, Any]], fen: str) -> dict[str, Any] | None:
     candidates = [e for e in evals if e.get("depth", 0) >= MIN_DEPTH]
     if not candidates:
         return None
@@ -118,17 +119,17 @@ def build(
     batch: list[tuple[str, int, int, str]] = []
 
     dctx = zstandard.ZstdDecompressor()
-    with open(src, "rb") as fh:
+    with src.open("rb") as fh:
         text = io.TextIOWrapper(dctx.stream_reader(fh), encoding="utf-8")
         try:
             for raw_line in text:
-                raw_line = raw_line.strip()
-                if not raw_line:
+                line = raw_line.strip()
+                if not line:
                     continue
                 lines += 1
 
                 try:
-                    entry = json.loads(raw_line)
+                    entry = json.loads(line)
                 except json.JSONDecodeError:
                     continue
 
@@ -136,12 +137,14 @@ def build(
                 if result is None:
                     continue
 
-                batch.append((
-                    entry["fen"],
-                    result["bestCp"],
-                    result["depth"],
-                    json.dumps(result["acceptedMoves"]),
-                ))
+                batch.append(
+                    (
+                        entry["fen"],
+                        result["bestCp"],
+                        result["depth"],
+                        json.dumps(result["acceptedMoves"]),
+                    )
+                )
                 inserted += 1
 
                 if len(batch) >= _BATCH:
@@ -164,8 +167,7 @@ def build(
 
     if batch:
         conn.executemany(
-            "INSERT OR REPLACE INTO qualifying_positions "
-            "(fen, best_cp, depth, accepted_moves) VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO qualifying_positions (fen, best_cp, depth, accepted_moves) VALUES (?, ?, ?, ?)",
             batch,
         )
         conn.commit()
@@ -175,7 +177,7 @@ def build(
     print(f"\nDone. Lines: {lines:,} | Qualifying positions: {inserted:,} | {elapsed:.1f}s")
 
 
-def lookup(conn: sqlite3.Connection, fen_4: str) -> dict | None:
+def lookup(conn: sqlite3.Connection, fen_4: str) -> dict[str, Any] | None:
     row = conn.execute(
         "SELECT best_cp, depth, accepted_moves FROM qualifying_positions WHERE fen = ?",
         (fen_4,),

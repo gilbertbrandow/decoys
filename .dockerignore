@@ -1,0 +1,15 @@
+# Mounted at runtime (see Makefile), never baked into the image
+data/
+
+.git/
+.venv/
+venv/
+.vscode/
+.claude/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

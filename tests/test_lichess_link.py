@@ -1,9 +1,6 @@
-import sys
-from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from lichess_link import final_fen, find_link_violations, pgn_to_uci, resolve_lichess_url
+from decoys.lichess_link import final_fen, find_link_violations, pgn_to_uci, resolve_lichess_url
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +22,7 @@ class FakeClient:
         return self.moves_by_id.get(game_id)
 
 
-def _rec(moves: str, url: str | None) -> dict:
+def _rec(moves: str, url: str | None) -> dict[str, Any]:
     return {"game_moves": moves, "lichessGameUrl": url}
 
 
