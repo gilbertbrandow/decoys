@@ -1,9 +1,4 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from lichess_link import final_fen, find_link_violations, pgn_to_uci, resolve_lichess_url
+from decoys.lichess_link import final_fen, find_link_violations, pgn_to_uci, resolve_lichess_url
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

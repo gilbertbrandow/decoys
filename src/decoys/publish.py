@@ -21,7 +21,7 @@ REPO_TYPE = "dataset"
 
 def check_dataset(path: Path) -> None:
     """Refuse to publish if any lichessGameUrl is shared by different games."""
-    from lichess_link import find_link_violations
+    from decoys.lichess_link import find_link_violations
 
     with path.open(encoding="utf-8") as f:
         violations = find_link_violations(json.loads(line) for line in f)

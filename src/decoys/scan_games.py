@@ -12,8 +12,8 @@ import chess
 import chess.pgn
 import py7zr  # type: ignore[import-not-found]
 
-from eval_db import lookup, open_db
-from lichess_link import LichessClient, resolve_lichess_url
+from decoys.eval_db import lookup, open_db
+from decoys.lichess_link import LichessClient, resolve_lichess_url
 
 MOVE_MIN = 20
 GM_ELO_THRESHOLD = 2600

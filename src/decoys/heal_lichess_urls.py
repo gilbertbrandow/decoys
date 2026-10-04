@@ -18,7 +18,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from lichess_link import (
+from decoys.lichess_link import (
     LICHESS_GAME_BASE,
     LichessClient,
     final_fen,

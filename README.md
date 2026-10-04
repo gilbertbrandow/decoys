@@ -25,7 +25,7 @@ Reads the [Lichess bulk eval dataset](https://database.lichess.org/#evals) (`lic
 
 Walks an OTB master PGN archive (both players ELO ≥ 2600) and looks up each position in the SQLite. When a match is found, the position is emitted as a puzzle record — including the opponent's last move, all accepted replies, and optionally the source game's Lichess URL. Positions are deduplicated across games by FEN.
 
-The Lichess URL is only set when the Masters database holds this exact game (identical full move list); otherwise it is `null`. Looking it up requires a Lichess API token in `LICHESS_TOKEN`. `publish.py` refuses to upload a file where one URL is shared by different games.
+The Lichess URL is only set when the Masters database holds this exact game (identical full move list); otherwise it is `null`. Looking it up requires a Lichess API token in `LICHESS_TOKEN`. `decoys.publish` refuses to upload a file where one URL is shared by different games.
 
 ---
 
@@ -58,13 +58,13 @@ make docker-publish HF_REPO=yourname/your-dataset
 ## Quickstart (local Python)
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -e .
 
-python build_evals.py \
+python -m decoys.build_evals \
   --src data/raw/lichess_db_eval.jsonl.zst \
   --out data/decoy_evals.sqlite
 
-python run_scan.py \
+python -m decoys.run_scan \
   --games data/raw/LumbrasGigaBase_OTB_ELITE_ELO2400.7z \
   --db    data/decoy_evals.sqlite \
   --out   data/decoy_positions.jsonl \
@@ -131,7 +131,7 @@ assert meta["schemaVersion"] == EXPECTED_SCHEMA_VERSION, (
 ## Tests
 
 ```bash
-pip install pytest
+pip install pytest -e .
 pytest tests/
 ```
 

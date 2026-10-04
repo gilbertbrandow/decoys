@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-import scan_games
+from decoys import scan_games
 
 
 def main() -> None:
