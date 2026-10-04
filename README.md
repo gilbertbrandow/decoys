@@ -23,7 +23,9 @@ Reads the [Lichess bulk eval dataset](https://database.lichess.org/#evals) (`lic
 
 **Stage 2 — Scan master games**
 
-Walks an OTB master PGN archive (both players ELO ≥ 2600) and looks up each position in the SQLite. When a match is found, the position is emitted as a puzzle record — including the opponent's last move, all accepted replies, and optionally a Lichess reference game URL. Positions are deduplicated across games by FEN.
+Walks an OTB master PGN archive (both players ELO ≥ 2600) and looks up each position in the SQLite. When a match is found, the position is emitted as a puzzle record — including the opponent's last move, all accepted replies, and optionally the source game's Lichess URL. Positions are deduplicated across games by FEN.
+
+The Lichess URL is only set when the Masters database holds this exact game (identical full move list); otherwise it is `null`. Looking it up requires a Lichess API token in `LICHESS_TOKEN`. `publish.py` refuses to upload a file where one URL is shared by different games.
 
 ---
 
@@ -80,7 +82,7 @@ python run_scan.py \
 | `--sort-by-elo` | off | Process highest-rated games first |
 | `--max-per-game` | 2 | Max decoy positions to emit per game |
 | `--decoys-limit` | none | Stop after N decoys found |
-| `--no-lichess-urls` | off | Skip Lichess reference URL lookup (faster) |
+| `--no-lichess-urls` | off | Skip Lichess game URL lookup (faster; no token needed) |
 | `--event-filter` | none | Only include games whose Event header matches |
 
 ---

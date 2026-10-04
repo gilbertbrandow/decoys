@@ -11,16 +11,12 @@ from pathlib import Path
 import chess
 import chess.pgn
 import py7zr  # type: ignore[import-not-found]
-import requests
 
 from eval_db import lookup, open_db
+from lichess_link import LichessClient, resolve_lichess_url
 
 MOVE_MIN = 20
 GM_ELO_THRESHOLD = 2600
-
-_EXPLORER_URL = "https://explorer.lichess.org/masters"
-_LICHESS_GAME_BASE = "https://lichess.org/{}"
-_RATE_INTERVAL = 1.0
 
 
 def _title_fallback(title: str | None, elo_str: str | None) -> str | None:
@@ -137,64 +133,6 @@ def stream_games_by_elo(path: Path, min_both_elo: int = 0):
                 yield game
 
 
-def _fetch_lichess_url(
-    fen: str,
-    http: requests.Session,
-    last_req: list[float],
-    fen_cache: dict[str, str | None],
-) -> str | None:
-    """Rate-limited Lichess Masters Explorer lookup with cross-game FEN cache.
-
-    Retries indefinitely on transient errors (network, 5xx, 429).
-    Returns None only when the API definitively responds 200 with no topGames.
-    No authentication required — the Masters Explorer is a public API.
-    """
-    if fen in fen_cache:
-        return fen_cache[fen]
-
-    elapsed = time.monotonic() - last_req[0]
-    if elapsed < _RATE_INTERVAL:
-        time.sleep(_RATE_INTERVAL - elapsed)
-
-    backoff = 2.0
-    attempts = 0
-    max_attempts = 8
-    while attempts < max_attempts:
-        try:
-            resp = http.get(
-                _EXPLORER_URL,
-                params={"fen": fen, "topGames": "1", "moves": "0"},
-                timeout=10,
-            )
-            last_req[0] = time.monotonic()
-
-            if resp.status_code == 429:
-                retry_after = int(resp.headers.get("Retry-After", 60))
-                print(f"  429 rate limited — sleeping {retry_after}s", flush=True)
-                time.sleep(retry_after)
-                last_req[0] = time.monotonic()
-                continue  # 429 doesn't count as an attempt
-            if resp.status_code == 200:
-                games = resp.json().get("topGames", [])
-                url = _LICHESS_GAME_BASE.format(games[0]["id"]) if games else None
-                fen_cache[fen] = url
-                return url
-
-            print(f"  Unexpected status {resp.status_code} — retrying in {backoff:.0f}s", flush=True)
-
-        except Exception as exc:
-            print(f"  Lichess request error ({exc}) — retrying in {backoff:.0f}s", flush=True)
-
-        attempts += 1
-        time.sleep(backoff)
-        backoff = min(backoff * 2, 60.0)
-        last_req[0] = time.monotonic()
-
-    print(f"  Failed to resolve Lichess URL after {max_attempts} attempts — storing null", flush=True)
-    fen_cache[fen] = None
-    return None
-
-
 def print_info(path: Path, min_both_elo: int = 0) -> None:
     total = 0
     elos: list[int] = []
@@ -241,10 +179,8 @@ def scan(
     conn = open_db(db_path)
     game_source = stream_games_by_elo if sort_by_elo else stream_games
 
-    http = requests.Session()
-    http.headers["Accept"] = "application/json"
-    last_req: list[float] = [0.0]
-    fen_cache: dict[str, str | None] = {}
+    lichess = LichessClient() if fetch_lichess_urls else None
+    lichess_linked = 0
 
     try:
         with open(out_path, "w", encoding="utf-8") as out:
@@ -285,19 +221,18 @@ def scan(
                                 decoys_found += 1
                                 decoys_this_game += 1
 
-                                if fetch_lichess_urls and not game_lichess_fetched:
+                                if lichess and not game_lichess_fetched:
                                     lichess_queries += 1
                                     print(
                                         f"  [API call #{lichess_queries}] {game.headers.get('White')} vs "
-                                        f"{game.headers.get('Black')} move {move_num} — querying Lichess ...",
+                                        f"{game.headers.get('Black')} — querying Lichess ...",
                                         flush=True,
                                     )
-                                    game_lichess_url = _fetch_lichess_url(
-                                        current_fen_4, http, last_req, fen_cache
-                                    )
+                                    game_lichess_url = resolve_lichess_url(full_game_moves, lichess)
+                                    lichess_linked += game_lichess_url is not None
                                     print(f"  → {game_lichess_url}", flush=True)
                                     game_lichess_fetched = True
-                                elif fetch_lichess_urls and decoys_this_game > 1:
+                                elif lichess and decoys_this_game > 1:
                                     print(
                                         f"  [reuse] {game.headers.get('White')} vs "
                                         f"{game.headers.get('Black')} move {move_num} — reusing {game_lichess_url}",
@@ -354,6 +289,6 @@ def scan(
     print(
         f"Decoys found:       {decoys_found:,}  ({decoys_found / max(positions_checked, 1) * 100:.2f}% hit rate)"
     )
-    print(f"Lichess queries:    {lichess_queries:,} ({len(fen_cache)} unique FENs cached)")
+    print(f"Lichess queries:    {lichess_queries:,} ({lichess_linked:,} games linked)")
     print(f"Elapsed:            {elapsed:.1f}s")
     print(f"Output:             {out_path}")

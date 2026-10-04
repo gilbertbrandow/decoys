@@ -1,6 +1,7 @@
 """Upload decoy_positions.jsonl to a HuggingFace dataset repo."""
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -18,6 +19,17 @@ REPO_ID = "simongilbertbrandow/chess-decoy-positions"
 REPO_TYPE = "dataset"
 
 
+def check_dataset(path: Path) -> None:
+    """Refuse to publish if any lichessGameUrl is shared by different games."""
+    from lichess_link import find_link_violations
+
+    with path.open(encoding="utf-8") as f:
+        violations = find_link_violations(json.loads(line) for line in f)
+    if violations:
+        sample = ", ".join(f"{url} ({n} games)" for url, n in list(violations.items())[:5])
+        sys.exit(f"{len(violations)} lichessGameUrl(s) shared by different games, e.g. {sample}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Publish decoy_positions.jsonl to HuggingFace")
     p.add_argument("--file", required=True, type=Path, help="Path to decoy_positions.jsonl")
@@ -26,6 +38,7 @@ def main() -> None:
 
     if not args.file.exists():
         sys.exit(f"File not found: {args.file}")
+    check_dataset(args.file)
 
     login(token=os.environ.get("HF_TOKEN"))
 
